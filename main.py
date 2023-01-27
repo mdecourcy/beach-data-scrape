@@ -6,6 +6,10 @@ import pandas as pd
 
 import requests
 
+# function that sends requests to get xls output of given payload request
+# input: none
+# output: xls string
+# todo: add input parameters for payload
 def get_xls():
     headers = {
         "Host": "beachwatch.waterboards.ca.gov",
@@ -43,22 +47,27 @@ def get_xls():
     except requests.exceptions.HTTPError as e:
         print(f"An error occurred: {e}")
 
-
+# function that converts tabbed xls string to dataframe
+# input: xls string
+# output: dataframe
 def get_dataframe(xls: str):
     xls = xls.replace('\t\t', '\t')
     df = pd.read_csv(StringIO(xls), sep='\t', engine='python')
     return df
 
+# function that returns dataframe between two dates
+# input: dataframe, start date, end date
+# output: dataframe
 def return_between_dates(df: pd.DataFrame, start_date: str, end_date: str):
     df['SampleDate'] = pd.to_datetime(df['SampleDate'])
     df = df.loc[(df['SampleDate'] >= start_date) & (df['SampleDate'] <= end_date)]
     return df
 
 def main():
-    xls = get_xls()
+    xls = get_xls() 
     df = get_dataframe(xls)
     print(df)
-    # print(df["parameter"].unique())
+    # print(df["parameter"].unique()) # get unique values for parameter column
     # between = return_between_dates(df, '2023-01-15', '2023-01-25')
     # print(between)
 
