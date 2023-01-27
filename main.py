@@ -51,7 +51,7 @@ def get_xls():
 # input: xls string
 # output: dataframe
 def get_dataframe(xls: str):
-    xls = xls.replace('\t\t', '\t')
+    xls = xls.replace('\t\t', '\t') # replace double tabs with single tab to avoid pandas error as original dataset has *some* double tabs
     df = pd.read_csv(StringIO(xls), sep='\t', engine='python')
     return df
 
@@ -62,13 +62,11 @@ def return_between_dates(df: pd.DataFrame, start_date: str, end_date: str):
     df['SampleDate'] = pd.to_datetime(df['SampleDate'])
     df = df.loc[(df['SampleDate'] >= start_date) & (df['SampleDate'] <= end_date)]
     return df
-
-def main():
+    
+if __name__ == "__main__":
     xls = get_xls() 
     df = get_dataframe(xls)
     print(df)
     # print(df["parameter"].unique()) # get unique values for parameter column
     # between = return_between_dates(df, '2023-01-15', '2023-01-25')
     # print(between)
-
-main()
