@@ -1,0 +1,62 @@
+
+# function that sends get request to https://www.waterboards.ca.gov/water_issues/programs/beaches/search_beach_mon.html using requests.session
+import requests
+import pandas as pd
+
+
+def get_xls():
+    headers = {
+        "Host": "beachwatch.waterboards.ca.gov",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; rv:109.0) Gecko/20100101 Firefox/109.0",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.5",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Content-Length": "122",
+        "Origin": "https://beachwatch.waterboards.ca.gov",
+        "DNT": "1",
+        "Connection": "keep-alive",
+        "Referer": "https://beachwatch.waterboards.ca.gov/public/result.php"
+    }
+    payload = {
+        "County": "10",
+        "stationID": "",
+        "parameter": "",
+        "qualifier": "",
+        "method": "",
+        "created": "30",
+        "year": "2023",
+        "sort": "`SampleDate`",
+        "sortOrder": "DESC",
+        "submit": "Search"
+    }
+
+    with requests.session() as sesh:
+        resp = sesh.post('https://beachwatch.waterboards.ca.gov/public/result.php',data=payload, headers=headers)
+        xls = sesh.get('https://beachwatch.waterboards.ca.gov/public/export.php')
+       
+        return xls.text
+
+def get_dataframe(xls: str):
+    string_list = xls.split('\n')
+    cols = string_list.pop(0).split('\t')
+
+    normalized_list = []
+    for x in string_list:
+        normalized_list.append(x.replace('\t\t', '\t'))
+    df = pd.DataFrame([x.split('\t') for x in normalized_list], columns=cols)
+    return df
+
+def return_between_dates(df: pd.DataFrame, start_date: str, end_date: str):
+    df['SampleDate'] = pd.to_datetime(df['SampleDate'])
+    df = df.loc[(df['SampleDate'] >= start_date) & (df['SampleDate'] <= end_date)]
+    return df
+
+def main():
+    xls = get_xls()
+    df = get_dataframe(xls)
+    # print(df["parameter"].unique())
+    # between = return_between_dates(df, '2023-01-15', '2023-01-25')
+    # print(between)
+
+main()
