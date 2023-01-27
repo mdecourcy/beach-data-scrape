@@ -4,6 +4,8 @@ from io import StringIO
 import requests
 import pandas as pd
 
+import requests
+
 def get_xls():
     headers = {
         "Host": "beachwatch.waterboards.ca.gov",
@@ -31,11 +33,16 @@ def get_xls():
         "submit": "Search"
     }
 
-    with requests.session() as sesh:
-        resp = sesh.post('https://beachwatch.waterboards.ca.gov/public/result.php', data=payload, headers=headers)
-        xls = sesh.get('https://beachwatch.waterboards.ca.gov/public/export.php')
-       
-        return xls.text
+    try:
+        with requests.session() as sesh:
+            resp = sesh.post('https://beachwatch.waterboards.ca.gov/public/result.php', data=payload, headers=headers)
+            resp.raise_for_status()
+            xls = sesh.get('https://beachwatch.waterboards.ca.gov/public/export.php')
+            xls.raise_for_status()
+            return xls.text
+    except requests.exceptions.HTTPError as e:
+        print(f"An error occurred: {e}")
+
 
 def get_dataframe(xls: str):
     xls = xls.replace('\t\t', '\t')
