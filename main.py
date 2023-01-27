@@ -1,8 +1,8 @@
 
 # function that sends get request to https://www.waterboards.ca.gov/water_issues/programs/beaches/search_beach_mon.html using requests.session
+from io import StringIO
 import requests
 import pandas as pd
-
 
 def get_xls():
     headers = {
@@ -32,19 +32,14 @@ def get_xls():
     }
 
     with requests.session() as sesh:
-        resp = sesh.post('https://beachwatch.waterboards.ca.gov/public/result.php',data=payload, headers=headers)
+        resp = sesh.post('https://beachwatch.waterboards.ca.gov/public/result.php', data=payload, headers=headers)
         xls = sesh.get('https://beachwatch.waterboards.ca.gov/public/export.php')
        
         return xls.text
 
 def get_dataframe(xls: str):
-    string_list = xls.split('\n')
-    cols = string_list.pop(0).split('\t')
-
-    normalized_list = []
-    for x in string_list:
-        normalized_list.append(x.replace('\t\t', '\t'))
-    df = pd.DataFrame([x.split('\t') for x in normalized_list], columns=cols)
+    xls = xls.replace('\t\t', '\t')
+    df = pd.read_csv(StringIO(xls), sep='\t', engine='python')
     return df
 
 def return_between_dates(df: pd.DataFrame, start_date: str, end_date: str):
@@ -55,6 +50,7 @@ def return_between_dates(df: pd.DataFrame, start_date: str, end_date: str):
 def main():
     xls = get_xls()
     df = get_dataframe(xls)
+    print(df)
     # print(df["parameter"].unique())
     # between = return_between_dates(df, '2023-01-15', '2023-01-25')
     # print(between)
