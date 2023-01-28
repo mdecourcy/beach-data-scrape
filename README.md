@@ -4,10 +4,10 @@ This code retrieves beach monitoring data from the California Water Boards websi
 Usage
 
 ```python
-    if __name__ == "__main__":
-    xls = get_xls() 
-    df = get_dataframe(xls)
-    print(df)
+if __name__ == "__main__":
+xls = get_xls() 
+df = get_dataframe(xls)
+print(df)
 ```
 
 The get_xls function sends a GET request to the California Water Boards website and returns the data in the form of an Excel file. The get_dataframe function then converts the Excel file to a Pandas dataframe, which can be further processed.
@@ -18,7 +18,7 @@ return_between_dates(df: pd.DataFrame, start_date: str, end_date: str)
 
 This function filters the dataframe to only include rows between the given start and end dates. The dates must be in the format 'YYYY-MM-DD'.
 
-Example:
+***Example:***
 ```python
 between = return_between_dates(df, '2023-01-15', '2023-01-25')
 print(between)
