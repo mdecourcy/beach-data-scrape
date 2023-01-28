@@ -26,10 +26,10 @@ print(between)
 
 ### Known Issues
 
-    * The original dataset has some double tabs, which can cause issues when using the Pandas library. The get_dataframe function addresses this issue by replacing double tabs with single tabs before processing the data.
+* The original dataset has some double tabs, which can cause issues when using the Pandas library. The get_dataframe function addresses this issue by replacing double tabs with single tabs before processing the data.
 
-    * The payload is hardcoded, to change the payload you need to change the payload variable.
+* The payload is hardcoded, to change the payload you need to change the payload variable.
 
-    * this script is scraping data from website, if website format or structure changed it may not work.
+* This script is scraping data from website, if website format or structure changed it may not work.
 
-    * It's not checking for the header of the website.
+* It's not checking for the header of the website.
