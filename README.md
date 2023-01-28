@@ -5,9 +5,9 @@ Usage
 
 ```python
 if __name__ == "__main__":
-xls = get_xls() 
-df = get_dataframe(xls)
-print(df)
+  xls = get_xls() 
+  df = get_dataframe(xls)
+  print(df)
 ```
 
 The get_xls function sends a GET request to the California Water Boards website and returns the data in the form of an Excel file. The get_dataframe function then converts the Excel file to a Pandas dataframe, which can be further processed.
