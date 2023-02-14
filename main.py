@@ -1,10 +1,6 @@
-
-# function that sends get request to https://www.waterboards.ca.gov/water_issues/programs/beaches/search_beach_mon.html using requests.session
 from io import StringIO
 import requests
 import pandas as pd
-
-import requests
 
 # function that sends requests to get xls output of given payload request
 # input: none
