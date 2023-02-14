@@ -1,6 +1,7 @@
 
 # function that sends get request to https://www.waterboards.ca.gov/water_issues/programs/beaches/search_beach_mon.html using requests.session
 from io import StringIO
+import json
 import requests
 import pandas as pd
 
@@ -62,11 +63,28 @@ def return_between_dates(df: pd.DataFrame, start_date: str, end_date: str):
     df['SampleDate'] = pd.to_datetime(df['SampleDate'])
     df = df.loc[(df['SampleDate'] >= start_date) & (df['SampleDate'] <= end_date)]
     return df
+
+# function that takes in dataframe and posts to a mongodb api
+# input: dataframe
+# output: none
+# todo: add input parameters for api url
+# todo: add error handling
+# todo: post to api
+def post_to_mongo_api(df: pd.DataFrame, url: str):
+    try:
+        payload = df.to_json(orient="records")
+        headers = {}
+        response = requests.request("POST", url, headers=headers, data=payload)
+        print(response.text.encode('utf8'))
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        print(f"An error occurred: {e}")
+
     
 if __name__ == "__main__":
     xls = get_xls() 
     df = get_dataframe(xls)
-    print(df)
-    # print(df["parameter"].unique()) # get unique values for parameter column
-    # between = return_between_dates(df, '2023-01-15', '2023-01-25')
-    # print(between)
+    # post_to_mongo(df)
+    # print(df["Beach Name"].unique()) # get unique values for parameter column
+    between = return_between_dates(df, '2023-01-29', '2023-01-30')
+    print(between.to_json(orient="records"))
