@@ -84,5 +84,5 @@ if __name__ == "__main__":
     df = get_dataframe(xls)
     # post_to_mongo(df)
     # print(df["Beach Name"].unique()) # get unique values for Beach Name column
-    between = filter_between_dates(df, '2023-01-29', '2023-01-30')
+    between = filter_between_dates(df, '2023-01-29', '2023-01-30') # filter between two dates, to be used to only post data collected that day
     print(between.to_json(orient="records"))
