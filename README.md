@@ -1,7 +1,8 @@
 # Beach Monitoring Data Retriever
 
 This code retrieves beach monitoring data from the California Water Boards website using the requests library. The data is returned in the form of an Excel file, and can be further processed using the provided helper functions.
-Usage
+
+***Usage:***
 
 ```python
 if __name__ == "__main__":
@@ -10,7 +11,7 @@ if __name__ == "__main__":
   print(df)
 ```
 
-The get_xls function sends a GET request to the California Water Boards website and returns the data in the form of an Excel file. The get_dataframe function then converts the Excel file to a Pandas dataframe, which can be further processed.
+The `get_xls` function sends a GET request to the California Water Boards website and returns the data in the form of an Excel file. The `get_dataframe` function then converts the Excel file to a Pandas dataframe, which can be further processed.
 ### Helper Functions
 ```python
 return_between_dates(df: pd.DataFrame, start_date: str, end_date: str)
