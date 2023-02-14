@@ -9,7 +9,7 @@ import requests
 # function that sends requests to get xls output of given payload request
 # input: none
 # output: xls string
-# todo: add input parameters for payload
+# todo: add input parameters for payload to allow for different queries, scraping data for more than just SD county
 def get_xls():
     headers = {
         "Host": "beachwatch.waterboards.ca.gov",
@@ -51,24 +51,38 @@ def get_xls():
 # input: xls string
 # output: dataframe
 def get_dataframe(xls: str):
-    xls = xls.replace('\t\t', '\t')
+    xls = xls.replace('\t\t', '\t') # replace double tabs with single tab to avoid pandas error as original dataset has *some* double tabs
     df = pd.read_csv(StringIO(xls), sep='\t', engine='python')
     return df
 
 # function that returns dataframe between two dates
 # input: dataframe, start date, end date
 # output: dataframe
-def return_between_dates(df: pd.DataFrame, start_date: str, end_date: str):
+def filter_between_dates(df: pd.DataFrame, start_date: str, end_date: str):
     df['SampleDate'] = pd.to_datetime(df['SampleDate'])
     df = df.loc[(df['SampleDate'] >= start_date) & (df['SampleDate'] <= end_date)]
     return df
 
-def main():
+# function that takes in dataframe and posts to a mongodb api
+# input: dataframe
+# output: none
+# todo: post to api
+# todo: bulk post to api to load historical data
+def post_to_mongo_api(df: pd.DataFrame, url: str):
+    try:
+        payload = df.to_json(orient="records")
+        headers = {}
+        response = requests.request("POST", url, headers=headers, data=payload)
+        print(response.text.encode('utf8'))
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        print(f"An error occurred: {e}")
+
+    
+if __name__ == "__main__":
     xls = get_xls() 
     df = get_dataframe(xls)
-    print(df)
-    # print(df["parameter"].unique()) # get unique values for parameter column
-    # between = return_between_dates(df, '2023-01-15', '2023-01-25')
-    # print(between)
-
-main()
+    # post_to_mongo(df)
+    # print(df["Beach Name"].unique()) # get unique values for Beach Name column
+    between = filter_between_dates(df, '2023-01-29', '2023-01-30')
+    print(between.to_json(orient="records"))
