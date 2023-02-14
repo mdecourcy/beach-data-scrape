@@ -1,36 +1,45 @@
 # Beach Monitoring Data Retriever
 
-This code retrieves beach monitoring data from the California Water Boards website using the requests library. The data is returned in the form of an Excel file, and can be further processed using the provided helper functions.
+This code provides functions for sending requests to the California State Water Resources Control Board website to obtain water quality data for San Diego County, and then process the data and post it to a MongoDB API.
 
-### Usage
+### Dependencies
 
-```python
-if __name__ == "__main__":
-  xls = get_xls() 
-  df = get_dataframe(xls)
-  print(df)
-```
+    - logging
+    - io
+    - typing
+    - pandas
+    - requests
 
-The `get_xls` function sends a GET request to the California Water Boards website and returns the data in the form of an Excel file. The `get_dataframe` function then converts the Excel file to a Pandas dataframe, which can be further processed.
-### Helper Functions
-```python
-return_between_dates(df: pd.DataFrame, start_date: str, end_date: str)
-```
+### How to use
 
-This function filters the dataframe to only include rows between the given start and end dates. The dates must be in the format 'YYYY-MM-DD'.
+To use this code, run the Python script in a Python environment with the required dependencies installed. The script will retrieve water quality data for San Diego County from the California State Water Resources Control Board website and filter it by date. The data will then be logged and can be optionally posted to a MongoDB API.
 
-***Example:***
-```python
-between = return_between_dates(df, '2023-01-15', '2023-01-25')
-print(between)
-```
+### Functions
+
+`get_xls(payload: Dict) -> str`
+
+This function sends requests to the California State Water Resources Control Board website to retrieve water quality data for San Diego County. It takes a dictionary of payload data as an input and returns an Excel file as a string.
+
+`get_dataframe(xls: str) -> pd.DataFrame`
+
+This function takes an Excel file as a string and converts it to a Pandas DataFrame.
+
+`filter_between_dates(df: pd.DataFrame, start_date: str, end_date: str) -> pd.DataFrame`
+
+This function filters the DataFrame by date, returning a new DataFrame with only the data collected between the specified start and end dates.
+
+`post_to_mongo_api(df: pd.DataFrame, url: str) -> None`
+
+This function takes a DataFrame and posts it to a MongoDB API. It takes a URL for the API as an input.
+
+### Todo
+
+There are several todo items in the code for adding more functionality. These include adding input parameters for the payload to allow for different queries, scraping data for more than just San Diego County, bulk posting to the MongoDB API to load historical data, and posting to the API.
 
 ### Known Issues
 
-* The original dataset has some double tabs, which can cause issues when using the Pandas library. The get_dataframe function addresses this issue by replacing double tabs with single tabs before processing the data.
+- The original dataset has some double tabs, which can cause issues when using the Pandas library. The get_dataframe function addresses this issue by replacing double tabs with single tabs before processing the data.
 
-* The payload is hardcoded, to change the payload you need to change the payload variable.
+- The payload is currently hardcoded, to change the payload you need to modify the payload variable in the code.
 
-* This script is scraping data from website, if website format or structure changed it may not work.
-
-* It's not checking for the header of the website.
+- This script is scraping data from a website, if the website format or structure changes, it may not work.
