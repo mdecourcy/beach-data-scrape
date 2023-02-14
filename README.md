@@ -2,7 +2,7 @@
 
 This code retrieves beach monitoring data from the California Water Boards website using the requests library. The data is returned in the form of an Excel file, and can be further processed using the provided helper functions.
 
-***Usage:***
+### Usage
 
 ```python
 if __name__ == "__main__":
