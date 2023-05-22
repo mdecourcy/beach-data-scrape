@@ -4,6 +4,8 @@ from io import StringIO
 import json
 import requests
 import pandas as pd
+import re
+import uuid
 
 import requests
 
@@ -11,6 +13,8 @@ import requests
 # input: none
 # output: xls string
 # todo: add input parameters for payload
+
+
 def get_xls():
     headers = {
         "Host": "beachwatch.waterboards.ca.gov",
@@ -40,9 +44,11 @@ def get_xls():
 
     try:
         with requests.session() as sesh:
-            resp = sesh.post('https://beachwatch.waterboards.ca.gov/public/result.php', data=payload, headers=headers)
+            resp = sesh.post(
+                'https://beachwatch.waterboards.ca.gov/public/result.php', data=payload, headers=headers)
             resp.raise_for_status()
-            xls = sesh.get('https://beachwatch.waterboards.ca.gov/public/export.php')
+            xls = sesh.get(
+                'https://beachwatch.waterboards.ca.gov/public/export.php')
             xls.raise_for_status()
             return xls.text
     except requests.exceptions.HTTPError as e:
@@ -51,17 +57,23 @@ def get_xls():
 # function that converts tabbed xls string to dataframe
 # input: xls string
 # output: dataframe
+
+
 def get_dataframe(xls: str):
-    xls = xls.replace('\t\t', '\t') # replace double tabs with single tab to avoid pandas error as original dataset has *some* double tabs
+    # replace double tabs with single tab to avoid pandas error as original dataset has *some* double tabs
+    xls = xls.replace('\t\t', '\t')
     df = pd.read_csv(StringIO(xls), sep='\t', engine='python')
     return df
 
 # function that returns dataframe between two dates
 # input: dataframe, start date, end date
 # output: dataframe
-def return_between_dates(df: pd.DataFrame, start_date: str, end_date: str):
+
+
+def filter_between_dates(df: pd.DataFrame, start_date: str, end_date: str):
     df['SampleDate'] = pd.to_datetime(df['SampleDate'])
-    df = df.loc[(df['SampleDate'] >= start_date) & (df['SampleDate'] <= end_date)]
+    df = df.loc[(df['SampleDate'] >= start_date)
+                & (df['SampleDate'] <= end_date)]
     return df
 
 # function that takes in dataframe and posts to a mongodb api
@@ -70,6 +82,8 @@ def return_between_dates(df: pd.DataFrame, start_date: str, end_date: str):
 # todo: add input parameters for api url
 # todo: add error handling
 # todo: post to api
+
+
 def post_to_mongo_api(df: pd.DataFrame, url: str):
     try:
         payload = df.to_json(orient="records")
@@ -80,11 +94,66 @@ def post_to_mongo_api(df: pd.DataFrame, url: str):
     except requests.exceptions.HTTPError as e:
         print(f"An error occurred: {e}")
 
-    
+
+def convert_dataframe_to_mongodb(df, column_map):
+    # Create a dictionary to store the converted column names and their corresponding values
+    converted_data = {}
+
+    # Join sample_date and sample_time columns into sample_datetime
+    df['Sample Date Time'] = pd.to_datetime(
+        df['SampleDate'] + ' ' + df['SampleTime'])
+    df['Sample Date Time'] = df['Sample Date Time'].dt.tz_localize('UTC')
+    df['Sample Date Time'] = df['Sample Date Time'].dt.tz_convert('Etc/GMT+9')
+
+    # Convert sample_datetime to ISODate format
+    df['Sample Date Time'] = df['Sample Date Time'].apply(
+        lambda x: x.isoformat())
+
+    # Iterate over the columns in the DataFrame
+    for column in df.columns:
+        if column in column_map:
+            converted_column = column_map[column]
+        else:
+            converted_column = column.lower().replace(' ', '_')
+        converted_data[converted_column] = df[column].values.tolist()
+
+    # Add a new column '_id' with generated GUIDs
+    converted_data['_id'] = [str(uuid.uuid4()) for _ in range(len(df))]
+
+    # Convert the dictionary to a new DataFrame
+    converted_df = pd.DataFrame(converted_data)
+
+    return converted_df
+
+
+# Define the column map for converting column names
+column_map = {
+    'id': '_id',
+    'Station_ID': 'station_id',
+    'Station Name': 'station_name',
+    'SampleDate': 'sample_date',
+    'SampleTime': 'sample_time',
+    'parameter': 'parameter',
+    'qualifier': 'qualifier',
+    'Result': 'result',
+    'unit': 'unit',
+    'method': 'method',
+    'type': 'type',
+    'County': 'county',
+    'Description': 'description',
+    'Beach Name': 'beach_name',
+    'Latitude': 'latitude',
+    'Longitude': 'longitude',
+    'CreateDate': 'create_date'
+}
+
 if __name__ == "__main__":
-    xls = get_xls() 
+    xls = get_xls()
     df = get_dataframe(xls)
-    # post_to_mongo(df)
-    # print(df["Beach Name"].unique()) # get unique values for parameter column
-    between = return_between_dates(df, '2023-01-29', '2023-01-30')
-    print(between.to_json(orient="records"))
+    # Convert the DataFrame to MongoDB conventions
+    converted_df = convert_dataframe_to_mongodb(df, column_map)
+    # Convert the DataFrame to JSON
+    json_data = converted_df.to_json(orient='records')
+    # Write the JSON data to the output file
+    with open('output.json', 'w') as file:
+        file.write(json_data)
