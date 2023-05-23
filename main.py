@@ -4,8 +4,6 @@ from io import StringIO
 import json
 import requests
 import pandas as pd
-import re
-import uuid
 
 import requests
 
@@ -95,65 +93,10 @@ def post_to_mongo_api(df: pd.DataFrame, url: str):
         print(f"An error occurred: {e}")
 
 
-def convert_dataframe_to_mongodb(df, column_map):
-    # Create a dictionary to store the converted column names and their corresponding values
-    converted_data = {}
-
-    # Join sample_date and sample_time columns into sample_datetime
-    df['Sample Date Time'] = pd.to_datetime(
-        df['SampleDate'] + ' ' + df['SampleTime'])
-    df['Sample Date Time'] = df['Sample Date Time'].dt.tz_localize('UTC')
-    df['Sample Date Time'] = df['Sample Date Time'].dt.tz_convert('Etc/GMT+9')
-
-    # Convert sample_datetime to ISODate format
-    df['Sample Date Time'] = df['Sample Date Time'].apply(
-        lambda x: x.isoformat())
-
-    # Iterate over the columns in the DataFrame
-    for column in df.columns:
-        if column in column_map:
-            converted_column = column_map[column]
-        else:
-            converted_column = column.lower().replace(' ', '_')
-        converted_data[converted_column] = df[column].values.tolist()
-
-    # Add a new column '_id' with generated GUIDs
-    converted_data['_id'] = [str(uuid.uuid4()) for _ in range(len(df))]
-
-    # Convert the dictionary to a new DataFrame
-    converted_df = pd.DataFrame(converted_data)
-
-    return converted_df
-
-
-# Define the column map for converting column names
-column_map = {
-    'id': '_id',
-    'Station_ID': 'station_id',
-    'Station Name': 'station_name',
-    'SampleDate': 'sample_date',
-    'SampleTime': 'sample_time',
-    'parameter': 'parameter',
-    'qualifier': 'qualifier',
-    'Result': 'result',
-    'unit': 'unit',
-    'method': 'method',
-    'type': 'type',
-    'County': 'county',
-    'Description': 'description',
-    'Beach Name': 'beach_name',
-    'Latitude': 'latitude',
-    'Longitude': 'longitude',
-    'CreateDate': 'create_date'
-}
-
 if __name__ == "__main__":
     xls = get_xls()
     df = get_dataframe(xls)
-    # Convert the DataFrame to MongoDB conventions
-    converted_df = convert_dataframe_to_mongodb(df, column_map)
-    # Convert the DataFrame to JSON
-    json_data = converted_df.to_json(orient='records')
-    # Write the JSON data to the output file
-    with open('output.json', 'w') as file:
-        file.write(json_data)
+    # post_to_mongo(df)
+    # print(df["Beach Name"].unique()) # get unique values for parameter column
+    # between = filter_between_dates(df, '2023-05-15', '2023-05-19')
+    # print(between.to_json(orient="records"))
