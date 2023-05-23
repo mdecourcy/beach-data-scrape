@@ -118,15 +118,7 @@ def convert_dataframe_to_mongodb(df, column_map):
     # Create a dictionary to store the converted column names and their corresponding values
     converted_data = {}
 
-    # Join sample_date and sample_time columns into sample_datetime
-    df['Sample Date Time'] = pd.to_datetime(
-        df['SampleDate'] + ' ' + df['SampleTime'])
-    df['Sample Date Time'] = df['Sample Date Time'].dt.tz_localize('UTC')
-    df['Sample Date Time'] = df['Sample Date Time'].dt.tz_convert('Etc/GMT+9')
-
-    # Convert sample_datetime to ISODate format
-    df['Sample Date Time'] = df['Sample Date Time'].apply(
-        lambda x: x.isoformat())
+    df = date_time_to_datetime(df)
 
     # Iterate over the columns in the DataFrame
     for column in df.columns:
@@ -143,6 +135,20 @@ def convert_dataframe_to_mongodb(df, column_map):
     converted_df = pd.DataFrame(converted_data)
 
     return converted_df
+
+
+def date_time_to_datetime(df):
+    df['Sample DateTime'] = pd.to_datetime(
+        df['SampleDate'] + ' ' + df['SampleTime'])
+    converted_dates = []
+
+    for _, row in df.iterrows():
+        sample_datetime = row['Sample DateTime'].tz_localize(
+            'UTC').tz_convert('Etc/GMT+9')
+        converted_dates.append(sample_datetime.isoformat())
+
+    df['Sample DateTime'] = converted_dates
+    return df
 
 
 if __name__ == "__main__":
