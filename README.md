@@ -6,7 +6,7 @@ This script fetches water quality data from the Beach Watch website, processes i
 
 ### Prerequisites
 
-1. Python (version used in development was 3.8, but it should work with any 3.x version).
+1. Python (version used in development was 3.11.4, but it should work with any 3.x version).
 2. Python libraries: `io`, `json`, `requests`, `pandas`, `uuid`, `logging`, `os`, `argparse`, `datetime`, `dotenv`.
 
 3. Environment variables (or `.env` file):
