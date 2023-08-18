@@ -1,45 +1,61 @@
-# Beach Monitoring Data Retriever
+# Water Quality Data Processor
 
-This code provides functions for sending requests to the California State Water Resources Control Board website to obtain water quality data for San Diego County, and then process the data and post it to a MongoDB API.
+This script fetches water quality data from the Beach Watch website, processes it, and then writes it into an InfluxDB database. The data spans from the year 2000 to the current year, though it can also fetch data for specific years. The script can be run with a "first-pass" argument which causes it to fetch and process data for all years since 2000.
 
-### Dependencies
+## Getting Started
 
-    - logging
-    - io
-    - typing
-    - pandas
-    - requests
+### Prerequisites
 
-### How to use
+1. Python (version used in development was 3.8, but it should work with any 3.x version).
+2. Python libraries: `io`, `json`, `requests`, `pandas`, `uuid`, `logging`, `os`, `argparse`, `datetime`, `dotenv`.
 
-To use this code, run the Python script in a Python environment with the required dependencies installed. The script will retrieve water quality data for San Diego County from the California State Water Resources Control Board website and filter it by date. The data will then be logged and can be optionally posted to a MongoDB API.
+3. Environment variables (or `.env` file):
 
-### Functions
+- `INFLUXDB_URL`: The InfluxDB server URL.
+- `INFLUXDB_ORG`: The organization for the InfluxDB.
+- `INFLUXDB_BUCKET`: The bucket where data will be stored in the InfluxDB.
+- `INFLUXDB_TOKEN`: The authentication token for InfluxDB.
 
-`get_xls(payload: Dict) -> str`
+4. Access to the Beach Watch website.
 
-This function sends requests to the California State Water Resources Control Board website to retrieve water quality data for San Diego County. It takes a dictionary of payload data as an input and returns an Excel file as a string.
+### Installation
 
-`get_dataframe(xls: str) -> pd.DataFrame`
+1. Clone the repository to your local machine: ```git clone https://github.com/mdecourcy/beach-data-scrape.git```
 
-This function takes an Excel file as a string and converts it to a Pandas DataFrame.
+2. Navigate to the project directory: ```cd [project_directory]```
 
-`filter_between_dates(df: pd.DataFrame, start_date: str, end_date: str) -> pd.DataFrame`
+3. Install the required Python packages: ```pip install -r requirements.txt```
 
-This function filters the DataFrame by date, returning a new DataFrame with only the data collected between the specified start and end dates.
+### Usage
 
-`post_to_mongo_api(df: pd.DataFrame, url: str) -> None`
+To run the script for all years from 2000 to the current year: ```python script_name.py --first-pass```
 
-This function takes a DataFrame and posts it to a MongoDB API. It takes a URL for the API as an input.
+To run the script for the current year: ```python script_name.py```
 
-### Todo
+    
+### Features
 
-There are several todo items in the code for adding more functionality. These include adding input parameters for the payload to allow for different queries, scraping data for more than just San Diego County, bulk posting to the MongoDB API to load historical data, and posting to the API.
+- Fetches water quality data in the form of an XLS file.
+- Converts the XLS data to a pandas dataframe.
+- Maps the column names to the desired format.
+- Converts the dataframe data to line protocol, which is the format required for writing data to InfluxDB.
+- Writes the data to an InfluxDB database.
 
-### Known Issues
+### Logging
 
-- The original dataset has some double tabs, which can cause issues when using the Pandas library. The get_dataframe function addresses this issue by replacing double tabs with single tabs before processing the data.
+The script logs various information and error messages. Logs are written to a file named app.log.
+Contributing
 
-- The payload is currently hardcoded, to change the payload you need to modify the payload variable in the code.
+If you wish to contribute to this project, please create an issue first to discuss your intended changes. After that, you can create a pull request.
+License
 
-- This script is scraping data from a website, if the website format or structure changes, it may not work.
+This project is open-source. Please refer to the LICENSE file for more details.
+
+### Acknowledgements
+
+- Thanks to the Beach Watch website for providing the data.
+- Thanks to the InfluxDB community for their extensive documentation.
+
+### Disclaimer
+
+The script relies on the availability of the Beach Watch website and the format in which it provides data. If there are changes in the website's structure or the data format, the script may not function as expected.
