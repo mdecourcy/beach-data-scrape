@@ -59,3 +59,6 @@ This project is open-source. Please refer to the LICENSE file for more details.
 ### Disclaimer
 
 The script relies on the availability of the Beach Watch website and the format in which it provides data. If there are changes in the website's structure or the data format, the script may not function as expected.
+
+### Screenshot
+<img width="1450" alt="image" src="https://github.com/mdecourcy/beach-data-scrape/assets/49794076/74c0974a-266a-4e5a-adda-ab64d885d921">
