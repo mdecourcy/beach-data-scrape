@@ -28,9 +28,9 @@ This script fetches water quality data from the Beach Watch website, processes i
 
 ### Usage
 
-To run the script for all years from 2000 to the current year: ```python script_name.py --first-pass```
+To run the script for all years from 2000 to the current year: ```python water_quality.py --first-pass```
 
-To run the script for the current year: ```python script_name.py```
+To run the script for the current year: ```python water_quality.py```
 
     
 ### Features
