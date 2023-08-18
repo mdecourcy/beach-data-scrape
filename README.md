@@ -22,7 +22,7 @@ This script fetches water quality data from the Beach Watch website, processes i
 
 1. Clone the repository to your local machine: ```git clone https://github.com/mdecourcy/beach-data-scrape.git```
 
-2. Navigate to the project directory: ```cd [project_directory]```
+2. Navigate to the project directory: ```cd beach-data-scrape```
 
 3. Install the required Python packages: ```pip install -r requirements.txt```
 
