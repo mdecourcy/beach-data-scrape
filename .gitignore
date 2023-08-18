@@ -1,6 +1,5 @@
-records
-data.json
-output.json
 .DS_Store
 .vscode
 .git
+__pycache__
+*.log

@@ -1,10 +1,28 @@
-
-# function that sends get request to https://www.waterboards.ca.gov/water_issues/programs/beaches/search_beach_mon.html using requests.session
 from io import StringIO
 import json
 import requests
 import pandas as pd
 import uuid
+import logging
+import os
+import argparse
+from datetime import datetime
+import dotenv  
+
+dotenv.load_dotenv()
+
+INFLUXDB_URL = os.environ.get('INFLUXDB_URL', 'http://localhost:8086')
+INFLUXDB_ORG = os.environ.get('INFLUXDB_ORG', 'health')
+INFLUXDB_BUCKET = os.environ.get('INFLUXDB_BUCKET', 'waterquality')
+INFLUXDB_TOKEN = os.environ.get('INFLUXDB_TOKEN', '')
+
+# Configuring the logger
+logging.basicConfig(filename='app.log',  # Log goes to this file
+                    level=logging.INFO,   # Capture everything from info level upwards
+                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')  # Format of the log
+
+logger = logging.getLogger(__name__)  # Create logger instance for this module
+
 
 # function that sends requests to get xls output of given payload request
 # input: none
@@ -12,7 +30,7 @@ import uuid
 # todo: add input parameters for payload
 
 
-def get_xls():
+def get_xls(year=2023):
     headers = {
         "Host": "beachwatch.waterboards.ca.gov",
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; rv:109.0) Gecko/20100101 Firefox/109.0",
@@ -32,8 +50,8 @@ def get_xls():
         "parameter": "",
         "qualifier": "",
         "method": "",
-        "created": "30",
-        "year": "2023",
+        "created": "",
+        "year": f"{year}",
         "sort": "`SampleDate`",
         "sortOrder": "DESC",
         "submit": "Search"
@@ -49,6 +67,7 @@ def get_xls():
             xls.raise_for_status()
             return xls.text
     except requests.exceptions.HTTPError as e:
+        logger.error(f"HTTPError in get_xls function: {e}")
         print(f"An error occurred: {e}")
 
 # function that converts tabbed xls string to dataframe
@@ -76,21 +95,6 @@ def filter_between_dates(df: pd.DataFrame, start_date: str, end_date: str):
 # function that takes in dataframe and posts to a mongodb api
 # input: dataframe
 # output: none
-# todo: add input parameters for api url
-# todo: add error handling
-# todo: post to api
-
-
-def post_to_mongo_api(df: pd.DataFrame, url: str):
-    try:
-        payload = df.to_json(orient="records")
-        headers = {}
-        response = requests.request("POST", url, headers=headers, data=payload)
-        print(response.text.encode('utf8'))
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        print(f"An error occurred: {e}")
-
 
 # Define the column map for converting column names
 column_map = {
@@ -138,30 +142,73 @@ def convert_dataframe_to_mongodb(df, column_map):
 
 
 def date_time_to_datetime(df):
-    df['Sample DateTime'] = pd.to_datetime(
-        df['SampleDate'] + ' ' + df['SampleTime'])
-    converted_dates = []
-
-    for _, row in df.iterrows():
-        sample_datetime = row['Sample DateTime'].tz_localize(
-            'UTC').tz_convert('Etc/GMT+9')
-        converted_dates.append(sample_datetime.isoformat())
-
-    df['Sample DateTime'] = converted_dates
+    df['sample_datetime'] = pd.to_datetime(df['SampleDate'] + ' ' + df['SampleTime'])
+    df['sample_datetime'] = df['sample_datetime'].dt.tz_localize('UTC').dt.tz_convert('Etc/GMT+9')
     return df
 
 
+def write_to_influxdb(df, url, org, bucket, token):
+    headers = {
+        "Authorization": f"Token {token}",
+        "Content-Type": "text/plain"
+    }
+    
+    line_protocol_data = df_to_line_protocol(df)
+    
+    try:
+        write_url = f"{url}/api/v2/write?org={org}&bucket={bucket}&precision=ns"
+        response = requests.post(write_url, headers=headers, data=line_protocol_data)
+        
+        if not response.ok:
+            logger.error(response.content.decode('utf-8'))  
+        
+        response.raise_for_status()
+    except Exception as e:
+        logger.exception("Exception occurred in write to influx db {e}")
+
+def df_to_line_protocol(df):
+    lines = []
+    for _, row in df.iterrows():
+        # The beach name and station_id are tags. We need to escape special characters.
+        beach_name_escaped = row["beach_name"].replace(",", r"\,").replace(" ", r"\ ")
+        station_id = row["station_id"]
+        tag_set = f'beach_name={beach_name_escaped},station_id={station_id}'
+
+        
+        # Check if the result is numeric (integer or float)
+        if isinstance(row['result'], (int, float)):
+            field_set = f'parameter="{row["parameter"]}",result={row["result"]}'
+        else:
+            field_set = f'parameter="{row["parameter"]}",result="{row["result"]}"'
+        
+        # Timestamp remains as is
+        timestamp = int(pd.Timestamp(row['sample_datetime']).value)
+        measurement = row["parameter"].replace(",", r"\,").replace(" ", r"\ ")
+        # Combine to form the line protocol
+        line = f"{measurement},{tag_set} {field_set} {timestamp}"
+        lines.append(line)
+    return "\n".join(lines)
+
+
 if __name__ == "__main__":
-    xls = get_xls()
-    df = get_dataframe(xls)
-    # Convert the DataFrame to MongoDB conventions
-    converted_df = convert_dataframe_to_mongodb(df, column_map)
-    # Convert the DataFrame to JSON
-    json_data = converted_df.to_json(orient='records')
-    # Write the JSON data to the output file
-    with open('output.json', 'w') as file:
-        file.write(json_data)
-    # post_to_mongo(df)
-    # print(df["Beach Name"].unique()) # get unique values for parameter column
-    # between = filter_between_dates(df, '2023-05-15', '2023-05-19')
-    # print(between.to_json(orient="records"))
+    parser = argparse.ArgumentParser(description="Fetch and process water quality data.")
+    parser.add_argument('--first-pass', action='store_true', help="Run the script for all years from 2000 to the present year.")
+    args = parser.parse_args()
+
+    if args.first_pass:
+        current_year = pd.Timestamp.now().year
+        for year in range(2000, current_year + 1):
+            xls = get_xls(str(year))
+            if xls:
+                df = get_dataframe(xls)
+                if df is not None:
+                    logger.info(f'found data for {year}, inserting to db...')
+                    converted_df = convert_dataframe_to_mongodb(df, column_map)
+                    write_to_influxdb(converted_df, INFLUXDB_URL, INFLUXDB_ORG, INFLUXDB_BUCKET, INFLUXDB_TOKEN)
+    else:
+        xls = get_xls()
+        if xls:
+            df = get_dataframe(xls)
+            if df is not None:
+                converted_df = convert_dataframe_to_mongodb(df, column_map)
+                write_to_influxdb(converted_df, INFLUXDB_URL, INFLUXDB_ORG, INFLUXDB_BUCKET, INFLUXDB_TOKEN)
