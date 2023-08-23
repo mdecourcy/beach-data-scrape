@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)  # Create logger instance for this module
 # todo: add input parameters for payload
 
 
-def get_xls(year=2023):
+def get_xls(year=2023, county=10):
     headers = {
         "Host": "beachwatch.waterboards.ca.gov",
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; rv:109.0) Gecko/20100101 Firefox/109.0",
@@ -45,7 +45,7 @@ def get_xls(year=2023):
         "Referer": "https://beachwatch.waterboards.ca.gov/public/result.php"
     }
     payload = {
-        "County": "10",
+        "County": f"{county}",
         "stationID": "",
         "parameter": "",
         "qualifier": "",
@@ -118,7 +118,7 @@ column_map = {
 }
 
 
-def convert_dataframe_to_mongodb(df, column_map):
+def convert_df_column_names(df, column_map):
     # Create a dictionary to store the converted column names and their corresponding values
     converted_data = {}
 
@@ -143,7 +143,7 @@ def convert_dataframe_to_mongodb(df, column_map):
 
 def date_time_to_datetime(df):
     df['sample_datetime'] = pd.to_datetime(df['SampleDate'] + ' ' + df['SampleTime'])
-    df['sample_datetime'] = df['sample_datetime'].dt.tz_localize('UTC').dt.tz_convert('Etc/GMT+9')
+    df['sample_datetime'] = df['sample_datetime'].dt.tz_localize('America/Los_Angeles').dt.tz_convert('UTC')
     return df
 
 
@@ -203,12 +203,12 @@ if __name__ == "__main__":
                 df = get_dataframe(xls)
                 if df is not None:
                     logger.info(f'found data for {year}, inserting to db...')
-                    converted_df = convert_dataframe_to_mongodb(df, column_map)
+                    converted_df = convert_df_column_names(df, column_map)
                     write_to_influxdb(converted_df, INFLUXDB_URL, INFLUXDB_ORG, INFLUXDB_BUCKET, INFLUXDB_TOKEN)
     else:
         xls = get_xls()
         if xls:
             df = get_dataframe(xls)
             if df is not None:
-                converted_df = convert_dataframe_to_mongodb(df, column_map)
+                converted_df = convert_df_column_names(df, column_map)
                 write_to_influxdb(converted_df, INFLUXDB_URL, INFLUXDB_ORG, INFLUXDB_BUCKET, INFLUXDB_TOKEN)
