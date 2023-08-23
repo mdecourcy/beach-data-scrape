@@ -8,8 +8,16 @@ import os
 import argparse
 from datetime import datetime
 import dotenv  
+from pathlib import Path
 
-dotenv.load_dotenv()
+# Get the current script's directory
+script_dir = Path(__file__).parent
+
+# Construct the .env path
+dotenv_path = script_dir / '.env'
+
+# Load the .env file
+dotenv.load_dotenv(dotenv_path)
 
 INFLUXDB_URL = os.environ.get('INFLUXDB_URL', 'http://localhost:8086')
 INFLUXDB_ORG = os.environ.get('INFLUXDB_ORG', 'health')
@@ -92,9 +100,6 @@ def filter_between_dates(df: pd.DataFrame, start_date: str, end_date: str):
                 & (df['SampleDate'] <= end_date)]
     return df
 
-# function that takes in dataframe and posts to a mongodb api
-# input: dataframe
-# output: none
 
 # Define the column map for converting column names
 column_map = {
@@ -132,9 +137,6 @@ def convert_df_column_names(df, column_map):
             converted_column = column.lower().replace(' ', '_')
         converted_data[converted_column] = df[column].values.tolist()
 
-    # Add a new column '_id' with generated GUIDs
-    converted_data['_id'] = [str(uuid.uuid4()) for _ in range(len(df))]
-
     # Convert the dictionary to a new DataFrame
     converted_df = pd.DataFrame(converted_data)
 
@@ -165,6 +167,7 @@ def write_to_influxdb(df, url, org, bucket, token):
         response.raise_for_status()
     except Exception as e:
         logger.exception("Exception occurred in write to influx db {e}")
+
 
 def df_to_line_protocol(df):
     lines = []
